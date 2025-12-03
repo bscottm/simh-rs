@@ -1,0 +1,20 @@
+[workspace]
+members = [
+    "crates/sim-core"
+]
+
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+authors = ["B. Scott Michel <scooter.phd@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "fixme."
+description = "A Rust-based rewrite of the SIMH computer simulation framework."
+
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "2.0.17"
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
