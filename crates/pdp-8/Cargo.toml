@@ -1,0 +1,19 @@
+[package]
+name = "pdp-8"
+description = "The PDP8-E/I simulator."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+sim-core= { path = "../sim-core" }
+sim-help = { path = "../sim-help" }
+
+# Dependencies inherited from the workspace
+log.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+bitflags.workspace = true

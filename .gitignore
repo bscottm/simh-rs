@@ -1,1 +1,8 @@
-/target
+*.swp
+*.un~
+*~
+\#*\#
+target/
+
+## Ignore CMake cruft for the time being.
+build/

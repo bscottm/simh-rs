@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "nullsys",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=nullsys"
+                ],
+                "filter": {
+                    "name": "nullsys",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

@@ -1,16 +1,74 @@
 [package]
 name = "sim-core"
-version = "0.1.0"
-edition = "2024"
 description = "SIMH simulator core functionality."
+build = "build/main.rs"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
-crate-type = ["rlib", "dylib"]
+crate-type = ["rlib"]
+
+[build-dependencies]
+serde.workspace = true
+toml.workspace = true
+serde_yaml_ng = "0.10.0"
 
 [dependencies]
-nom = "8.0.0"
+resource-macro = { path = "resource-macro" }
+sim-help = { path = "../sim-help" }
 
+cfg-if = "1.0"
+chrono = "0.4"
+crossterm = "0.29"
+derive_more = { version = "2", features = ["display"] }
+flexi_logger = "0.31"
+globset = "0.4"
+nom = "8.0"
+nom-language = "0.1"
+num-format = "0.4"
+once_cell = "1.21"
+parking_lot = "0.12"
+reedline = "0.45"
+rustc-hash = "2.1"
+walkdir = "2.5"
+
+# Dependencies inherited from the workspace
 log.workspace = true
 anyhow.workspace = true
-serde.workspace = true
 thiserror.workspace = true
+serde.workspace = true
+
+# Unix-specific dependencies
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+nix = { version = "0.31.1", features = [
+    "feature",
+    "time",
+    "pthread",
+    "sched",
+    "process",
+] }
+
+# macOS-specific dependencies
+[target.'cfg(target_os = "macos")'.dependencies]
+mach2 = "0.6.0"
+
+# Windows-specific dependencies
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = [
+    "winbase",
+    "sysinfoapi",
+    "timeapi",
+    "processthreadsapi",
+    "profileapi",
+] }
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "timer_bench"
+harness = false

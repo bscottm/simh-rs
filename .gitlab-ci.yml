@@ -1,0 +1,41 @@
+# .gitlab-ci.yml
+
+# Use the official Rust image
+image: rust:latest
+
+# Define stages
+stages:
+  - build
+  - test
+
+# Cache dependencies to speed up builds
+cache:
+  paths:
+    - target/
+    - .cargo/
+
+# Build job
+build:
+  stage: build
+  script:
+    - rustc --version && cargo --version  # Print version info
+    - cargo build --release
+  artifacts:
+    paths:
+      - target/release/
+    expire_in: 1 week
+
+# Test job
+test:
+  stage: test
+  script:
+    - cargo test --verbose
+
+# Optional: Check formatting and linting
+check:
+  stage: test
+  script:
+    - rustup component add rustfmt clippy
+    - cargo fmt -- --check
+    - cargo clippy -- -D warnings
+  allow_failure: true

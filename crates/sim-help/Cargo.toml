@@ -1,0 +1,28 @@
+[package]
+name = "sim-help"
+description = "SIMH simulator help module."
+build = "build/main.rs"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+reedline = "0.45.0"
+crossterm = "0.29.0"
+termimad = "0.34.1"
+
+# Dependencies inherited from the workspace
+log.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+
+[build-dependencies]
+serde.workspace = true
+toml.workspace = true
+serde_yaml_ng = "0.10.0"

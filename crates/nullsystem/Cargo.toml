@@ -1,0 +1,18 @@
+[package]
+name = "nullsystem"
+description = "Null system: No-op testing system"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Dependencies inherited from the workspace
+log.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+
+sim-core = { path = "../sim-core" }
+sim-help = { path = "../sim-help" }

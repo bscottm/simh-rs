@@ -1,0 +1,2508 @@
+# help.yaml - SIMH-style hierarchical help system with Markdown formatting
+
+# Root node - always present
+root:
+  id: commands
+  title: "Commands"
+  content: |
+    # SIMH Command Help System
+
+    Use `help <command>` for detailed help on a specific command.
+    Use `help <topic>` to explore help topics.
+
+# Hierarchical help nodes
+nodes:
+  # Level 2 nodes (direct children of root)
+  - id: reset
+    parent: commands
+    title: "Resetting Devices"
+    content: |
+      The **RESET** command (abbreviation **RE**) resets a device or the entire simulator
+      to a predefined condition. If switch `-p` is specified, the device is reset
+      to its power-up state:
+
+      ```
+      RESET                  reset all devices
+      RESET -p               powerup all devices
+      RESET ALL              reset all devices
+      RESET <device>         reset specified device
+      ```
+
+      Typically, RESET stops any in-progress I/O operation, clears any interrupt
+      request, and returns the device to a quiescent state. It does not clear
+      main memory or affect I/O connections.
+
+  - id: examine
+    parent: commands
+    title: "Examining and Changing State"
+    content: |
+      There are four commands to examine and change state:
+
+      * **EXAMINE** (abbreviated **E**) examines state
+      * **DEPOSIT** (abbreviated **D**) changes state
+      * **IEXAMINE** (interactive examine, abbreviated **IE**) examines state and allows
+        the user to interactively change it
+      * **IDEPOSIT** (interactive deposit, abbreviated **ID**) allows the user to
+        interactively change state
+
+      All four commands take the form:
+
+      ```
+      command [@output] [mask_op value] [cmp_op value] [device] resource[,resource]
+      ```
+      
+      **DEPOSIT** must also include a deposit value at the end of the command.
+
+      The `@output` expression redirects command output to a file instead of the
+      console. `output` must be a valid file name.
+
+      `mask_op value` is an optional expression that masks the resource's value before
+      printing or modifying. The `mask_op` operators are "&" (and), "|" (or) and "^"
+      (exclusive or), applying the operator and value to each resource.
+
+      `cmp_op value` is an optional expression that compares the resource's value to the
+      `cmp_op`'s value. If the comparison is false, the resource's value is not printed
+      (examine) or not modified (deposit.) Valid `cmp_op` operators are "==" (equal), "!="
+      (not equal), ">" (greater than), ">=" (greater than or equal), "<" (less than) and
+      "<=" (less than or equal.)
+
+      `device` is an optional device name to be examined or modified. Ordinarily, SIMH-RS
+      can infer the device to which a resource belongs. However, multiple devices may
+      publish the same resource name, e.g. "BUF" is a buffer resource name published by
+      both "DEV1" and "DEV2". When a resource name is ambiguous, a `device` name must be
+      specified.
+
+      A `resource[,resource]` list is a comma-separated list of device resource names,
+      such as "PC" (CPU's program counter) or "L" (PDP-8 link flag). To see the list of
+      resource names published by a device, use "SHOW DEVICE".
+
+      A resource is:
+
+      * `register` - the specified register
+      * `register[sub1-sub2]` - the specified register array locations, starting at
+        location sub1 up to and including location sub2
+      * `register[sub1/length]` - the specified register array locations, starting at
+        location sub1 up to but not including sub1+length
+      * `register[ALL]` - all locations in the specified register array
+      * `register1-register2` - all the registers starting at register1 up to and
+        including register2
+      * `address` - the specified location
+      * `address1-address2` - all locations starting at address1 up to and including address2
+      * `address/length` - all locations starting at address up to but not including
+        address+length
+      * `STATE` - all registers in the device
+      * `ALL` - all locations in the unit
+      * `$` - the last value displayed by an EXAMINE command interpreted as an address
+
+    children:
+      - examine_switches
+      - examine_examples
+
+  # Level 3 nodes (children of examine)
+  - id: examine_switches
+    parent: examine
+    title: "Switches"
+    content: |
+      Switches can be used to control the format of display information:
+
+      * `-a` - display as ASCII
+      * `-c` - display as character string
+      * `-m` - display as instruction mnemonics
+      * `-o` or `-8` - display as octal
+      * `-d` or `-10` - display as decimal
+      * `-h` or `-16` - display as hexadecimal
+      * `-2` - display as binary
+
+      The simulators typically accept symbolic input (see documentation with each
+      simulator).
+
+  - id: examine_examples
+    parent: examine
+    title: "Examples"
+    content: |
+      Examples:
+
+      ```
+      ex 1000-1100                examine 1000 to 1100
+      de PC 1040                  set PC to 1040
+      ie 40-50                    interactively examine 40:50
+      ie >1000 40-50              interactively examine the subset
+                                  of locations 40:50 that are >1000
+      ex rx0 50060                examine 50060, RX unit 0
+      ex rx sbuf[3-6]             examine SBUF[3] to SBUF[6] in RX
+      de all 0                    set main memory to 0
+      de &77>0 0                  set all addresses whose low order
+                                  bits are non-zero to 0
+      ex -m @memdump.txt 0-7777   dump memory to file
+      ```
+
+      **Note:** to terminate an interactive command, simply type a bad value
+      (eg, XYZ) when input is requested.
+
+  - id: run
+    parent: commands
+    title: "Running A Simulated Program"
+    content: |
+      Programs run until the simulator detects an error or stop condition, or
+      until the user forces a stop condition.
+    children:
+      - run_command
+      - go_command
+      - continue_command
+      - step_command
+      - boot_command
+
+  - id: run_command
+    parent: run
+    title: "RUN"
+    content: |
+      ```
+      RUN {start_pc_addr} {UNTIL stop_pc_addr|"output-string"}
+      ```
+
+      The **RUN** command (abbreviated **RU**) resets all devices, deposits its argument
+      (if given) in the PC, and starts execution. If no argument is given,
+      execution starts at the current PC.
+
+      The optional `UNTIL` argument specifies a stop criteria for execution.
+      There are two forms of execution stop criteria:
+
+      1. A temporary breakpoint (which exists only until it is encountered).
+      2. A string which will stop execution when the simulator has output
+         the indicated string.
+
+  - id: go_command
+    parent: run
+    title: "GO"
+    content: |
+      ```
+      GO {start_pc_addr} {UNTIL stop_pc_addr|"output-string"}
+      ```
+
+      The **GO** command does not reset devices, deposits its argument (if given)
+      in the PC, and starts execution. If no argument is given, execution
+      starts at the current PC.
+
+      The optional `UNTIL` argument specifies a stop criteria for execution.
+      There are two forms of execution stop criteria:
+
+      1. A temporary breakpoint (which exists only until it is encountered).
+      2. A string which will stop execution when the simulator has output
+         the indicated string.
+
+  - id: continue_command
+    parent: run
+    title: "CONTINUE"
+    content: |
+      The **CONT** command (abbreviated **CO**) does not reset devices and resumes
+      execution at the current PC.
+
+  - id: step_command
+    parent: run
+    title: "STEP"
+    content: |
+      The **STEP** command (abbreviated **S**) resumes execution at the current PC for
+      the number of instructions given by its argument. If no argument is
+      supplied, one instruction is executed.
+    children:
+      - step_switches
+
+  - id: step_switches
+    parent: step_command
+    title: "Switches"
+    content: |
+      If the STEP command is invoked with the `-T` switch, the step command will
+      cause execution to run for microseconds rather than instructions.
+
+  - id: boot_command
+    parent: run
+    title: "BOOT"
+    content: |
+      The **BOOT** command (abbreviated **BO**) resets all devices and bootstraps the
+      device and unit given by its argument. If no unit is supplied, unit 0 is
+      bootstrapped. The specified unit must be attached.
+
+  - id: breakpoints
+    parent: commands
+    title: "Breakpoints"
+    content: |
+      A simulator may offer breakpoint capability. A simulator may define
+      breakpoints of different types, identified by letter (for example, **E** for
+      execution, **R** for read, **W** for write, etc). At the moment, most simulators
+      support only **E** (execution) breakpoints.
+
+      Associated with a breakpoint are a count and, optionally, one or more
+      actions. Each time the breakpoint is taken, the associated count is
+      decremented. If the resulting count is less than or equal to 0, the
+      breakpoint occurs; otherwise, it is deferred. When the breakpoint occurs,
+      the optional actions are automatically executed.
+
+      A breakpoint is set by the **BREAK** or the **SET BREAK** commands:
+
+      ```
+      BREAK {-types} {<addr range>{[count]},{addr range...}}{;action;action...}
+      SET BREAK {-types} {<addr range>{[count]},{addr range...}}{;action;action...}
+      ```
+
+      If no type is specified, the simulator-specific default breakpoint type
+      (usually E for execution) is used. If no address range is specified, the
+      current PC is used.
+    children:
+      - break_display
+      - break_remove
+      - break_examples
+
+  - id: break_display
+    parent: breakpoints
+    title: "Displaying Breakpoints"
+    content: |
+      Currently set breakpoints can be displayed with the **SHOW BREAK** command:
+
+      ```
+      SHOW {-C} {-types} BREAK {ALL|<addr range>{,<addr range>...}}
+      ```
+
+      Locations with breakpoints of the specified type are displayed.
+
+      The `-C` switch displays the selected breakpoint(s) formatted as commands
+      which may be subsequently used to establish the same breakpoint(s).
+
+  - id: break_remove
+    parent: breakpoints
+    title: "Removing Breakpoints"
+    content: |
+      Breakpoints can be cleared by the **NOBREAK** or the **SET NOBREAK** commands.
+
+  - id: break_examples
+    parent: breakpoints
+    title: "Examples"
+    content: |
+      ```
+      BREAK                      set E break at current PC
+      BREAK -e 200               set E break at 200
+      BREAK 2000/2[2]            set E breaks at 2000,2001 with count = 2
+      BREAK 100;EX AC;D MQ 0     set E break at 100 with actions EX AC and
+                                 D MQ 0
+      BREAK 100;                 delete action on break at 100
+      ```
+
+  - id: attach
+    parent: commands
+    title: "ATTACH"
+    content: |
+      The **ATTACH** (abbreviation **AT**) command associates a unit and a file:
+
+      ```
+      ATTACH <unit> <filename>
+      ```
+
+      Some devices have more detailed or specific help available with:
+
+      ```
+      HELP <device> ATTACH
+      ```
+    children:
+      - attach_switches
+
+  - id: attach_switches
+    parent: attach
+    title: "Switches"
+    content: |
+      * `-n` - If specified when an attach is executed, a new file is created
+      * `-e` - If the file does not exist and `-e` is specified, an error occurs instead
+        of creating a new file
+      * `-r` - Open the file read only. If the file does not exist, or the unit does not
+        support read only operation, an error occurs
+      * `-q` - Suppress messages when creating new files (`-n`) or opening read only (`-r`)
+      * `-f` - For tape/disk devices, specify the format of the attached image file
+
+  - id: set
+    parent: commands
+    title: "SET"
+    content: |
+      The **SET** command modifies simulator and device state.
+    children:
+      - set_console
+      - set_debug
+      - set_throttle
+      - set_device
+
+  - id: set_console
+    parent: set
+    title: "Console"
+    content: |
+      ```
+      SET CONSOLE arg{,arg...}    set console options
+      SET CONSOLE WRU=value       specify console drop to simh character
+      SET CONSOLE BRK=value       specify console Break character
+      SET CONSOLE DEL=value       specify console delete character
+      SET CONSOLE TELNET=port     specify console telnet port
+      SET CONSOLE NOTELNET        disable console telnet
+      ```
+
+  - id: set_debug
+    parent: set
+    title: "Debug"
+    content: |
+      ```
+      SET DEBUG debug_file        specify the debug destination
+                                  (STDOUT,STDERR,LOG or filename)
+      SET NODEBUG                 disables any currently active debug output
+      ```
+    children:
+      - set_debug_switches
+
+  - id: set_debug_switches
+    parent: set_debug
+    title: "Switches"
+    content: |
+      Debug message output contains a timestamp which indicates the number of
+      simulated instructions which have been executed prior to the debug event.
+
+      Debug message output can be enhanced to contain additional, potentially
+      useful information:
+
+      * `-T` - Causes debug output to contain a time of day displayed as hh:mm:ss.msec
+      * `-A` - Causes debug output to contain a time of day displayed as seconds.msec
+      * `-R` - Causes the time of day displayed due to `-T` or `-A` to be relative to
+        the start time of debugging
+      * `-P` - Adds the output of the PC (Program Counter) to each debug message
+      * `-N` - Causes a new/empty file to be written to (default is append)
+
+  - id: set_throttle
+    parent: set
+    title: "Throttle"
+    content: |
+      Simulator instruction execution rate can be controlled by specifying
+      one of the following throttle commands:
+
+      ```
+      SET THROTTLE xM             execute x million instructions per second
+      SET THROTTLE xK             execute x thousand instructions per second
+      SET THROTTLE x%             occupy x percent of the host capacity
+                                  executing instructions
+      SET THROTTLE x/t            sleep for t milliseconds after executing x
+                                  instructions
+      SET NOTHROTTLE              set simulation rate to maximum
+      ```
+
+      Throttling is only available on host systems that implement a precision
+      real-time delay function.
+
+  - id: set_device
+    parent: set
+    title: "Device and Unit"
+    content: |
+      ```
+      SET <dev> OCT|DEC|HEX|BIN   set device display radix
+      SET <dev> ENABLED           enable device
+      SET <dev> DISABLED          disable device
+      SET <dev> DEBUG{=arg}       set device debug flags
+      SET <dev> NODEBUG={arg}     clear device debug flags
+      SET <unit> ENABLED          enable unit
+      SET <unit> DISABLED         disable unit
+      ```
+
+  - id: detach
+    parent: commands
+    title: "DETACH"
+    content: |
+      The **DETACH** (abbreviation **DET**) command breaks the association between a unit
+      and a file, port, or network device:
+
+      ```
+      DETACH ALL             detach all units
+      DETACH <unit>          detach specified unit
+      ```
+
+      The EXIT command performs an automatic DETACH ALL.
+
+  - id: show
+    parent: commands
+    title: "SHOW"
+    content: |
+      The **SHOW** command displays simulator state and configuration.
+    children:
+      - show_config
+      - show_devices
+      - show_queue
+      - show_time
+      - show_break
+      - show_version
+
+  - id: show_config
+    parent: show
+    title: "Configuration"
+    content: |
+      ```
+      SHOW CONFIGURATION      show configuration
+      ```
+
+      Displays the current simulator configuration including all devices,
+      units, and their current state.
+
+  - id: show_devices
+    parent: show
+    title: "Devices"
+    content: |
+      ```
+      SHOW DEVICES            show devices
+      SHOW -ei DEVICES        show devices with enabled/disabled info
+      ```
+
+      Lists all devices in the simulator. The `-e` switch shows only enabled
+      devices, and the `-i` switch includes additional information.
+
+  - id: show_queue
+    parent: show
+    title: "Queue"
+    content: |
+      ```
+      SHOW QUEUE              show event queue
+      ```
+
+      Displays the simulator's internal event queue, showing scheduled events.
+
+  - id: show_time
+    parent: show
+    title: "Time"
+    content: |
+      ```
+      SHOW TIME               show simulated time
+      ```
+
+      Displays the current simulated time and instruction count.
+
+  - id: show_break
+    parent: show
+    title: "Breakpoints"
+    content: |
+      ```
+      SHOW BREAK              show all breakpoints
+      SHOW -C BREAK           show breakpoints as commands
+      ```
+
+      Displays currently set breakpoints. The `-C` switch formats the output
+      as commands that can be used to recreate the breakpoints.
+
+  - id: show_version
+    parent: show
+    title: "Version"
+    content: |
+      ```
+      SHOW VERSION            show simulator version
+      ```
+
+      Displays the simulator version and build information.
+
+  - id: do
+    parent: commands
+    title: "Executing Command Files"
+    content: |
+      The simulator can execute command files with the **DO** command:
+
+      ```
+      DO <filename> {arguments...}       execute commands in file
+      ```
+
+      The DO command allows command files to contain substitutable arguments.
+      The string `%n`, where n is between 1 and 9, is replaced with argument n
+      from the DO command line. The string `%0` is replaced with `<filename>`.
+      The string `%*` is replaced by the whole set of arguments (%1 ... %9).
+
+      The sequences `\%` and `\\` are replaced with the literal characters % and \,
+      respectively. Arguments with spaces can be enclosed in matching single
+      or double quotation marks.
+
+      DO commands may be nested up to ten invocations deep.
+    children:
+      - do_switches
+      - do_variables
+      - do_goto
+      - do_return
+
+  - id: do_switches
+    parent: do
+    title: "Switches"
+    content: |
+      * `-v` - Echo commands before execution
+      * `-e` - Abort on command error (including nested invocations)
+      * `-o` - Inherit ON conditions and actions from caller
+      * `-q` - Enable quiet mode explicitly
+
+  - id: do_variables
+    parent: do
+    title: "Variable Insertion"
+    content: |
+      Built-in variables are available in command files:
+
+      * `%DATE%` - Current date as yyyy-mm-dd
+      * `%TIME%` - Current time as hh:mm:ss
+      * `%DATETIME%` - Combined date and time as yyyy-mm-ddThh:mm:ss
+      * `%STATUS%` - Status value from the last command executed
+      * `%TSTATUS%` - Text form of the last status value
+      * `%SIM_NAME%` - Name of the current simulator
+      * `%SIM_BIN_NAME%` - Program name of the current simulator
+      * `%SIM_BIN_PATH%` - Program path of the current simulator
+
+      Environment variable lookups use `%VARNAME%` syntax.
+
+  - id: do_goto
+    parent: do
+    title: "GOTO"
+    content: |
+      Commands in a command file execute in sequence until either an error
+      trap occurs, or when an explicit request is made to start command
+      execution elsewhere with the **GOTO** command:
+
+      ```
+      GOTO <label>
+      ```
+
+      Labels are lines in a command file where the first non-whitespace
+      character is a `:`. The target of a goto is the first matching label
+      in the current do command file.
+
+      ```
+      GOTO :EOF
+      ```
+
+      The target label of `:EOF` is explicitly defined to mean the end of the
+      DO command file.
+
+      **Examples:**
+      ```
+      :: This is a comment
+      echo Some Message to Output
+      :Target
+      :: This is a comment
+      GOTO Target
+      ```
+
+  - id: do_return
+    parent: do
+    title: "RETURN"
+    content: |
+      The **RETURN** command causes the current procedure call to be restored to the
+      calling context, possibly returning a specific return status.
+
+      ```
+      RETURN                   return from command file with last command status
+      RETURN {-Q} <status>     return from command file with specific status
+      ```
+
+      If no return status is specified, the return status from the last command
+      executed will be returned. The calling context may have ON traps defined
+      which may redirect command flow.
+
+      The `-Q` switch suppresses normal error status message printing.
+
+  - id: evaluate
+    parent: commands
+    title: "EVALUATE"
+    content: |
+      The **EVAL** command evaluates a symbolic instruction and returns the equivalent
+      numeric value. This is useful for obtaining numeric arguments for a search
+      command:
+
+      ```
+      EVAL <expression>
+      ```
+
+      **Examples (VAX):**
+      ```
+      sim> eval addl2 r2,r3
+      0:      005352C0
+      sim> eval addl2 #ff,6(r0)
+      0:      00FF8FC0
+      4:      06A00000
+      ```
+
+  - id: load
+    parent: commands
+    title: "LOAD"
+    content: |
+      The **LOAD** command (abbreviation **LO**) loads a file in binary loader format:
+
+      ```
+      LOAD <filename> {implementation options}
+      ```
+
+      The types of formats supported are implementation specific. Options (such
+      as load within range) are also implementation specific.
+
+  - id: dump
+    parent: commands
+    title: "DUMP"
+    content: |
+      The **DUMP** command (abbreviation **DU**) dumps memory in binary loader format:
+
+      ```
+      DUMP <filename> {implementation options}
+      ```
+
+      The types of formats supported are implementation specific. Options (such
+      as dump within range) are also implementation specific.
+
+  - id: save
+    parent: commands
+    title: "SAVE"
+    content: |
+      The **SAVE** command (abbreviation **SA**) saves the complete state of the simulator
+      to a file. This includes the contents of main memory and all registers,
+      and the I/O connections of devices:
+
+      ```
+      SAVE <filename>
+      ```
+
+      **Notes:**
+      1. SAVE file format compresses zeroes to minimize file size.
+      2. The simulator can't restore active incoming telnet sessions to
+         multiplexer devices, but listening ports will be restored.
+
+  - id: restore
+    parent: commands
+    title: "RESTORE"
+    content: |
+      The **RESTORE** command (abbreviation **REST**, alternately **GET**) restores a
+      previously saved simulator state:
+
+      ```
+      RESTORE <filename>
+      ```
+    children:
+      - restore_switches
+
+  - id: restore_switches
+    parent: restore
+    title: "Switches"
+    content: |
+      * `-Q` - Suppress version warning messages
+      * `-D` - Suppress detaching and attaching devices during restore
+      * `-F` - Override the related file timestamp validation check
+
+  - id: exit
+    parent: commands
+    title: "EXIT"
+    content: |
+      **EXIT** (synonyms **QUIT** and **BYE**) returns control to the operating system.
+
+      ```
+      EXIT {status}        exit with optional status
+      ```
+
+      An optional numeric exit status may be provided that an operating system
+      script may act on.
+
+  - id: echo
+    parent: commands
+    title: "ECHO"
+    content: |
+      The **ECHO** command prints out its arguments on the console (and log)
+      followed by a newline:
+
+      ```
+      ECHO <string>      output string to console
+      ```
+
+      If there is no argument, ECHO prints a blank line on the console. This
+      may be used to provide spacing in the console display or log.
+
+  - id: spawn
+    parent: commands
+    title: "Executing System Commands"
+    content: |
+      The simulator can execute operating system commands with the **!** (spawn)
+      command:
+
+      ```
+      !                    execute local command interpreter
+      ! <command>          execute local host command
+      ```
+
+      If no operating system command is provided, the simulator attempts to
+      launch the host operating system's command shell.
+
+      The exit status from the command which was executed is set as the command
+      completion status for the ! command. This may influence any enabled ON
+      condition traps.
+
+  - id: assert
+    parent: commands
+    title: "ASSERT"
+    content: |
+      The **ASSERT** command tests a simulator state condition and halts command
+      file execution if the condition is false:
+
+      ```
+      ASSERT <Simulator State Expressions>
+      ```
+
+      If the indicated expression evaluates to false, the command completes
+      with an AFAIL condition. By default, when a command file encounters a
+      command which returns the AFAIL condition, it will exit the running
+      command file with the AFAIL status to the calling command file.
+
+      **Example:**
+      ```
+      ; OS bootstrap command file
+      ATTACH DS0 os.disk
+      BOOT DS
+      ; A register contains error code; 0 = good boot
+      ASSERT A=0
+      ATTACH MT0 sys.tape
+      RUN
+      ```
+
+  - id: if
+    parent: commands
+    title: "IF"
+    content: |
+      The **IF** command tests a simulator state condition and executes additional
+      commands if the condition is true:
+
+      ```
+      IF <Conditional Expressions> command{; command}...
+      {ELSE command{; command}...}
+      ```
+
+      **Example:**
+      ```
+      IF EXIST "os.disk" echo os.disk exists
+      IF NOT EXIST os.disk echo os.disk not existing
+      IF NOT A=0 echo Boot failed - Failure Code; EX A; exit AFAIL
+      ```
+    children:
+      - if_expressions
+
+  - id: if_expressions
+    parent: if
+    title: "Conditional Expressions"
+    content: |
+      The IF and ASSERT commands evaluate several different forms of conditional
+      expressions:
+
+      **Simulator State Expressions:**
+      ```
+      {NOT} {<dev>} <reg>|<addr>{<logical-op><value>}<conditional-op><value>
+      ```
+
+      If `<dev>` is not specified, CPU is assumed. The `<logical-op>` can be:
+      * `&` - and
+      * `|` - or
+      * `^` - exclusive or
+
+      The `<conditional-op>` can be:
+      * `=` or `==` - equal
+      * `!` or `!=` - not equal
+      * `>=` - greater than or equal
+      * `>` - greater than
+      * `<=` - less than or equal
+      * `<` - less than
+
+      **String Comparison:**
+      ```
+      {-i}{-w} {NOT} "string1"|EnvVar1 <compare-op> "string2"|EnvVar2
+      ```
+
+      * `-i` - case insensitive comparison
+      * `-w` - allow arbitrary whitespace runs to equal single space
+      * Compare operators: `==`, `EQU`, `!=`, `NEQ`, `<`, `LSS`, `<=`, `LEQ`, `>`, `GTR`, `>=`, `GEQ`
+
+      **File Existence:**
+      ```
+      {NOT} EXIST "filespec"
+      ```
+
+      **File Comparison:**
+      ```
+      -F{W} {NOT} "filespec1" == "filespec2"
+      ```
+
+      The `-W` switch allows arbitrary whitespace runs to be considered equal.
+
+      When files differ, the `_FILE_COMPARE_DIFF_OFFSET` environment variable
+      is set to the offset of the first difference.
+
+      **C-Style Expressions:**
+
+      Expressions enclosed in parentheses can use C-style operators and can
+      reference constants, environment variables, or simulator registers.
+
+  - id: send
+    parent: commands
+    title: "SEND"
+    content: |
+      The **SEND** command provides a way to insert input into the console device of
+      a simulated system as if it was entered by a user.
+
+      ```
+      SEND {-t} {after=nn,}{delay=nn,}"string"
+      NOSEND
+      SHOW SEND
+      ```
+
+      The SEND command can also insert input into any serial device:
+
+      ```
+      SEND {-t} {<dev>:line} {after=nn,}{delay=nn,}"string"
+      NOSEND {<dev>:line}
+      SHOW SEND {<dev>:line}
+      ```
+
+      The string argument must be delimited by quote characters. Data in the string
+      may contain escaped character strings.
+    children:
+      - send_parameters
+      - send_escapes
+
+  - id: send_parameters
+    parent: send
+    title: "Parameters"
+    content: |
+      **delay** - Specifies an integer (>=0) representing a minimal instruction delay
+      between characters being sent. Default is 1000 instructions.
+
+      ```
+      SEND DELAY=n
+      ```
+
+      The value n can be specified with a suffix of `k` or `m` which indicates
+      a multiplier of 1000 or 1000000 respectively.
+
+      **after** - Specifies an integer (>=0) representing a minimal number of instructions
+      which must execute before the first character in the string is sent.
+
+      ```
+      SEND AFTER=n
+      ```
+
+      If not specified, defaults to the DELAY parameter value.
+
+      **-t switch** - Indicates that the Delay and After values are in units of
+      microseconds rather than instructions.
+
+  - id: send_escapes
+    parent: send
+    title: "Escape Sequences"
+    content: |
+      The following character escapes are supported in SEND strings:
+
+      * `\r` - ASCII Carriage Return (13)
+      * `\n` - ASCII Linefeed (10)
+      * `\f` - ASCII Formfeed (12)
+      * `\t` - ASCII Horizontal Tab (9)
+      * `\v` - ASCII Vertical Tab (11)
+      * `\b` - ASCII Backspace (8)
+      * `\\` - ASCII Backslash (92)
+      * `\'` - ASCII Single Quote (39)
+      * `\"` - ASCII Double Quote (34)
+      * `\?` - ASCII Question Mark (63)
+      * `\e` - ASCII Escape (27)
+      * `\nnn` - Octal character value (where n is 0-7)
+      * `\xhh` - Hex character value (where h is 0-9A-Fa-f)
+
+  - id: expect
+    parent: commands
+    title: "EXPECT"
+    content: |
+      The **EXPECT** command provides a way to stop execution and take actions
+      when specific output has been generated by the simulated system.
+
+      ```
+      EXPECT {dev:line} {[count]} {HALTAFTER=n,}"string" {action{;action}...}
+      NOEXPECT {dev:line} "string"
+      SHOW EXPECT {dev:line}
+      ```
+
+      The string argument must be delimited by quote characters. If a `[count]` is
+      specified, the rule will match after the match string has matched count times.
+
+      When multiple expect rules are defined with the same match string, they
+      will match in the same order they were defined.
+    children:
+      - expect_switches
+      - expect_matching
+
+  - id: expect_switches
+    parent: expect
+    title: "Switches"
+    content: |
+      * `-p` - Make the rule persistent (doesn't auto-remove after matching)
+      * `-c` - Clear all pending expect rules on the device when this rule matches
+      * `-r` - Interpret the string as a regular expression
+      * `-i` - Case independent matching (only valid with `-r`)
+      * `-t` - HaltAfter parameter is in microseconds instead of instructions
+
+  - id: expect_matching
+    parent: expect
+    title: "Pattern Matching"
+    content: |
+      When an expect rule matches, the environment variable `_EXPECT_MATCH_PATTERN`
+      is set to the rule which matched.
+
+      If the expect rule was a regular expression (with `-r`), then:
+      * `_EXPECT_MATCH_GROUP_0` - The whole matched string
+      * `_EXPECT_MATCH_GROUP_1` through `_EXPECT_MATCH_GROUP_n` - Parenthesized sub-groups
+
+      **HALTAFTER Parameter:**
+
+      Specifies the number of instructions which should execute before simulator
+      instruction execution should stop. Default is to stop immediately (HALTAFTER=0).
+
+      ```
+      EXPECT HALTAFTER=n
+      ```
+
+      Only a single EXPECT rule can be defined if a non-zero HaltAfter parameter
+      has been set, to avoid unpredictable behavior.
+
+  - id: on
+    parent: commands
+    title: "ON - Error Trapping"
+    content: |
+      Error traps can be taken when any command returns a non-success status.
+      Actions to be performed for particular status returns are specified with
+      the **ON** command.
+
+      ```
+      SET ON                   enable error traps
+      SET NOON                 disable error traps
+      SET ON INHERIT           enable inheritance into nested command files
+      SET ON NOINHERIT         disable inheritance
+      ```
+
+      To set action(s) for a specific error status:
+
+      ```
+      ON <statusvalue> command{; command}
+      ON <statusvalue>         clear actions for this status
+      ON ERROR command{; command}
+      ON ERROR                 clear default error actions
+      ```
+    children:
+      - on_statuses
+      - on_control_c
+
+  - id: on_statuses
+    parent: on
+    title: "Status Values"
+    content: |
+      ON traps can specify any of these status values:
+
+      NXM, UNATT, IOERR, CSUM, FMT, NOATT, OPENERR, MEM, ARG, STEP, UNK, RO,
+      INCOMP, STOP, TTIERR, TTOERR, EOF, REL, NOPARAM, ALATT, TIMER, SIGERR,
+      TTYERR, SUB, NOFNC, UDIS, NORO, INVSW, MISVAL, 2FARG, 2MARG, NXDEV,
+      NXUN, NXREG, NXPAR, NEST, IERR, MTRLNT, LOST, TTMO, STALL, AFAIL,
+      AMBREG, SIGTERM
+
+      These values can be indicated by name or by their internal numeric value.
+
+  - id: on_control_c
+    parent: on
+    title: "CONTROL-C Trapping"
+    content: |
+      A special ON trap is available to handle CONTROL_C (SIGINT) during command
+      execution:
+
+      ```
+      ON CONTROL_C <action>    perform action(s) after CTRL+C
+      ON CONTROL_C             restore default CTRL+C action
+      ```
+
+      The default ON CONTROL_C handler will exit nested DO command procedures
+      and return to the sim> prompt.
+
+      **Note:** When a simulator is executing instructions, entering CTRL+C will
+      cause the character to be delivered to the simulator as input. Use the WRU
+      character (usually CTRL+E) to stop instruction execution first.
+
+      ON CONTROL_C trapping is not affected by SET ON/SET NOON commands.
+
+  - id: assign
+    parent: commands
+    title: "Logical Names"
+    content: |
+      The standard device names can be supplemented with logical names. Logical
+      names must be unique within a simulator.
+
+      ```
+      ASSIGN <device> <log-name>      assign log-name to device
+      DEASSIGN <device>               remove logical name
+      SHOW <device> NAMES             show logical name, if any
+      SHOW NAMES                      show all logical names
+      ```
+
+      Logical names cannot be the same as an existing device name.
+
+  - id: cd
+    parent: commands
+    title: "Working Directory"
+    content: |
+      Set or display the current working directory:
+
+      ```
+      CD <path>           set current working directory
+      SET DEFAULT <path>  set current working directory
+      PWD                 display current working directory
+      ```
+
+  - id: dir
+    parent: commands
+    title: "Directory Listing"
+    content: |
+      List directory files:
+
+      ```
+      DIR {path}          list directory files
+      LS {path}           list directory files
+      ```
+
+  - id: type
+    parent: commands
+    title: "Display File"
+    content: |
+      Display file contents:
+
+      ```
+      TYPE file           display a file contents
+      CAT file            display a file contents
+      ```
+    children:
+      - type_switches
+
+  - id: type_switches
+    parent: type
+    title: "Switches"
+    content: |
+      * `-O offset` - Start displaying file contents at the specified offset
+      * `-N lines` - Display up to the specified number of lines from the file
+
+      ```
+      TYPE -{O}{N} {offset} {lines} file
+      ```
+
+  - id: delete
+    parent: commands
+    title: "Delete File"
+    content: |
+      Delete a file:
+
+      ```
+      DELETE file         delete a file
+      RM file             delete a file
+      ```
+
+      The `-Q` switch will suppress file not found warning messages.
+
+  - id: copy
+    parent: commands
+    title: "Copy File"
+    content: |
+      Copy a file:
+
+      ```
+      COPY sfile dfile    copy source file to destination file
+      CP sfile dfile      copy source file to destination file
+      ```
+
+  - id: rename
+    parent: commands
+    title: "Rename File"
+    content: |
+      Rename a file:
+
+      ```
+      RENAME origname newname     rename a file
+      MOVE origname newname       rename a file
+      MV origname newname         rename a file
+      ```
+
+  - id: mkdir
+    parent: commands
+    title: "Create Directory"
+    content: |
+      Create a directory:
+
+      ```
+      MKDIR path          create a directory
+      ```
+
+  - id: rmdir
+    parent: commands
+    title: "Delete Directory"
+    content: |
+      Delete a directory:
+
+      ```
+      RMDIR path          delete a directory
+      ```
+
+  - id: next
+    parent: commands
+    title: "NEXT"
+    content: |
+      The **NEXT** command (abbreviated **N**) resumes execution at the current PC for
+      one instruction, attempting to execute through subroutine calls.
+
+      ```
+      NEXT
+      ```
+
+      If the next instruction to be executed is not a subroutine call,
+      one instruction is executed.
+
+  - id: sleep
+    parent: commands
+    title: "SLEEP"
+    content: |
+      Pause for a specified period of time:
+
+      ```
+      SLEEP NUMBER[SUFFIX]...
+      ```
+
+      Pause for NUMBER seconds. SUFFIX may be:
+      * `s` - seconds (the default)
+      * `m` - minutes
+      * `h` - hours
+      * `d` - days
+
+      NUMBER may be an arbitrary floating point number. Given two or more arguments,
+      pause for the amount of time specified by the sum of their values.
+
+      **Note:** A SLEEP command is interruptible with SIGINT (CTRL+C).
+
+      **Examples:**
+      ```
+      SLEEP 5              sleep for 5 seconds
+      SLEEP 2.5            sleep for 2.5 seconds
+      SLEEP 1m 30s         sleep for 1 minute 30 seconds
+      ```
+
+  - id: echof
+    parent: commands
+    title: "ECHOF"
+    content: |
+      The **ECHOF** command prints output to console (and log) with support for
+      escape sequences and optional newline suppression:
+
+      ```
+      ECHOF {-n} "string"|string           output to console
+      ECHOF {-n} dev:line "string"|string  output to specified line
+      ```
+
+      If there is no argument, ECHOF prints a blank line. The string argument may
+      be delimited by quote characters (single or double, but matching). If enclosed
+      in quotes, the string may contain escaped character sequences.
+
+      The `-n` switch indicates that the supplied string should be output without
+      a newline after the string is written.
+
+      **Escape sequences** are the same as for SEND command (\\r, \\n, \\t, \\xhh, etc).
+
+  - id: shift
+    parent: commands
+    title: "SHIFT"
+    content: |
+      Shift the command file's positional parameters:
+
+      ```
+      SHIFT
+      ```
+
+      This shifts the positional parameters in a DO command file. After SHIFT,
+      `%2` becomes `%1`, `%3` becomes `%2`, etc. The original `%1` is discarded.
+
+  - id: call
+    parent: commands
+    title: "CALL"
+    content: |
+      Transfer control to a labeled subroutine within a command file:
+
+      ```
+      CALL <label>
+      ```
+
+      Similar to GOTO, but maintains a return address so that RETURN will
+      come back to the instruction after the CALL.
+
+  - id: proceed
+    parent: commands
+    title: "PROCEED/IGNORE"
+    content: |
+      The **PROCEED** or **IGNORE** commands do nothing. They are potentially useful
+      placeholders for an ON action condition which should be explicitly ignored:
+
+      ```
+      PROCEED              continue command file execution without doing anything
+      IGNORE               continue command file execution without doing anything
+      ```
+
+  - id: runlimit
+    parent: commands
+    title: "RUNLIMIT"
+    content: |
+      A simulator user may want to limit the maximum execution time that a
+      simulator may run for. The **RUNLIMIT** command provides ways to limit execution:
+
+      ```
+      RUNLIMIT n {INSTRUCTIONS|MICROSECONDS|SECONDS|MINUTES|HOURS}
+      NORUNLIMIT
+      ```
+
+      Equivalently:
+
+      ```
+      SET RUNLIMIT n {INSTRUCTIONS|MICROSECONDS|SECONDS|MINUTES|HOURS}
+      SET NORUNLIMIT
+      SHOW RUNLIMIT
+      ```
+
+      If the units of the run limit are not specified, the default units are
+      instructions. Once an execution run limit has been reached, any subsequent
+      GO, RUN, CONTINUE, STEP or BOOT commands will cause the simulator to exit.
+      A previously defined RUNLIMIT can be cleared with NORUNLIMIT or by
+      establishing a new run limit.
+
+  - id: screenshot
+    parent: commands
+    title: "SCREENSHOT"
+    content: |
+      Simulators with Video devices display the simulated video in a window(s)
+      on the local system. The contents of that display can be saved in a
+      file with the **SCREENSHOT** command:
+
+      ```
+      SCREENSHOT screenshotfile
+      ```
+
+      This creates a screen shot file (format depends on build configuration:
+      PNG if libpng available, otherwise BMP).
+
+  - id: set_remote
+    parent: set
+    title: "Remote Console"
+    content: |
+      Configure remote console access via telnet:
+
+      ```
+      SET REMOTE TELNET=port              specify remote console telnet port
+      SET REMOTE NOTELNET                 disable remote console
+      SET REMOTE BUFFERSIZE=bufsize       specify command output buffer size
+      SET REMOTE CONNECTIONS=n            specify number of concurrent sessions
+      SET REMOTE TIMEOUT=n                seconds without input before auto-continue
+      SET REMOTE MASTER                   enable master mode remote console
+      SET REMOTE NOMASTER                 disable remote master mode
+      ```
+
+  - id: set_log
+    parent: set
+    title: "Session Logging"
+    content: |
+      Interactions with the simulator session (at the "sim>" prompt) can be
+      recorded to a log file:
+
+      ```
+      SET LOG log_file                    specify the log destination
+                                          (STDOUT, DEBUG or filename)
+      SET NOLOG                           disable any currently active logging
+      ```
+    children:
+      - set_log_switches
+
+  - id: set_log_switches
+    parent: set_log
+    title: "Switches"
+    content: |
+      * `-N` - Create a new log file (default is append)
+      * `-B` - Open log file in binary mode (default is text mode)
+
+  - id: set_clock
+    parent: set
+    title: "Clock Configuration"
+    content: |
+      Configure clock and timing behavior:
+
+      ```
+      SET CLOCK ASYNCH                    enable asynchronous clocks
+      SET CLOCK NOASYNCH                  disable asynchronous clocks
+      SET CLOCK NOCATCHUP                 disable catchup clock ticks
+      SET CLOCK CATCHUP                   enable catchup clock ticks
+      SET CLOCK CALIB=n%                  specify idle calibration skip %
+      SET CLOCK CALIB=ALWAYS              calibration independent of idle
+      SET CLOCK STOP=n                    stop execution after n instructions
+      ```
+
+      The SET CLOCK STOP command allows execution to have a bound when
+      execution starts with a BOOT, NEXT or CONTINUE command.
+
+  - id: set_asynch
+    parent: set
+    title: "Asynchronous I/O"
+    content: |
+      Enable or disable asynchronous I/O:
+
+      ```
+      SET ASYNCH                          enable asynchronous I/O
+      SET NOASYNCH                        disable asynchronous I/O
+      ```
+
+  - id: set_environment
+    parent: set
+    title: "Environment Variables"
+    content: |
+      Set or manipulate environment variables:
+
+      ```
+      SET ENVIRONMENT name=val            set environment variable
+      SET ENVIRONMENT name                clear environment variable
+      ```
+    children:
+      - set_env_arithmetic
+      - set_env_prompt
+
+  - id: set_env_arithmetic
+    parent: set_environment
+    title: "Arithmetic Computations"
+    content: |
+      Perform arithmetic computations into a variable:
+
+      ```
+      SET ENVIRONMENT -A name=expression
+      ```
+
+      Expression can contain C language operators:
+
+      * `(` `)` - Parentheses
+      * `-` `+` - Subtraction, Addition
+      * `*` `/` `%` - Multiplication, Division, Modulus
+      * `&&` `||` - Logical AND, OR
+      * `&` `|` `^` - Bitwise AND, OR, XOR
+      * `>>` `<<` - Bitwise Right Shift, Left Shift
+      * `==` `!=` - Equality, Inequality
+      * `<=` `<` `>=` `>` - Comparisons
+      * `!` `~` - Logical Negation, Bitwise Complement
+
+      Operator precedence is consistent with C language precedence.
+
+      **Examples:**
+      ```
+      SET ENV -A A=7+2
+      SET ENV -A A=A-1
+      ECHO A=%A%
+      A=8
+      ```
+
+  - id: set_env_prompt
+    parent: set_environment
+    title: "Prompting for Input"
+    content: |
+      Gather input from a user:
+
+      ```
+      SET ENVIRONMENT -P "Prompt String" name=default
+      ```
+
+      The `-P` switch indicates that the user should be prompted with the
+      indicated prompt string and the input provided will be saved in the
+      environment variable 'name'. If no input is provided, the value
+      specified as 'default' will be used.
+
+  - id: set_verify
+    parent: set
+    title: "Command Execution Display"
+    content: |
+      Control display of command file processed commands:
+
+      ```
+      SET VERIFY                          enable display of commands
+      SET VERBOSE                         enable display of commands
+      SET NOVERIFY                        disable display of commands
+      SET NOVERBOSE                       disable display of commands
+      ```
+
+  - id: set_message
+    parent: set
+    title: "Command Error Status Display"
+    content: |
+      Control display of command file error messages:
+
+      ```
+      SET MESSAGE                         enable display of error messages
+      SET NOMESSAGE                       disable display of error messages
+      ```
+
+  - id: set_quiet
+    parent: set
+    title: "Command Output Display"
+    content: |
+      Control suppression of some output and messages:
+
+      ```
+      SET QUIET                           enable suppression
+      SET NOQUIET                         disable suppression
+      ```
+
+  - id: set_prompt
+    parent: set
+    title: "Command Prompt"
+    content: |
+      Set an alternate simulator prompt string:
+
+      ```
+      SET PROMPT "string"                 sets alternate prompt
+      ```
+
+  - id: set_break
+    parent: set
+    title: "Breakpoints (SET)"
+    content: |
+      Set or clear breakpoints using the SET command:
+
+      ```
+      SET BREAK <list>                    set breakpoints
+      SET NOBREAK <list>                  clear breakpoints
+      ```
+
+      This is equivalent to using the BREAK and NOBREAK commands directly.
+      See the BREAK command help for detailed syntax.
+
+  - id: show_throttle
+    parent: show
+    title: "Throttle"
+    content: |
+      ```
+      SHOW THROTTLE                       show simulation rate
+      ```
+
+      Shows the current throttle settings and calibration results.
+
+  - id: show_asynch
+    parent: show
+    title: "Asynchronous I/O"
+    content: |
+      ```
+      SHOW ASYNCH                         show asynchronous I/O state
+      ```
+
+      Shows whether asynchronous I/O is enabled or disabled.
+
+  - id: show_on
+    parent: show
+    title: "ON Conditions"
+    content: |
+      ```
+      SHOW ON                             show on condition actions
+      ```
+
+      Displays currently defined ON error trap conditions and their actions.
+
+  - id: show_do
+    parent: show
+    title: "DO Nesting"
+    content: |
+      ```
+      SHOW DO                             show do nesting state
+      ```
+
+      Shows the current DO command file nesting level and file names.
+
+  - id: show_runlimit
+    parent: show
+    title: "RUNLIMIT"
+    content: |
+      ```
+      SHOW RUNLIMIT                       show execution limit states
+      ```
+
+      Shows the current run limit configuration if one is set.
+
+  - id: show_ethernet
+    parent: show
+    title: "Ethernet Devices"
+    content: |
+      ```
+      SHOW ETHERNET                       show ethernet devices
+      ```
+
+      Lists available Ethernet devices on the host system that can be
+      used for Ethernet simulation.
+
+  - id: show_serial
+    parent: show
+    title: "Serial Devices"
+    content: |
+      ```
+      SHOW SERIAL                         show serial devices
+      ```
+
+      Lists available serial port devices on the host system.
+
+  - id: show_video
+    parent: show
+    title: "Video Capabilities"
+    content: |
+      ```
+      SHOW VIDEO                          show video capabilities
+      ```
+
+      Shows video display capabilities of the simulator.
+
+  - id: show_clocks
+    parent: show
+    title: "Clocks"
+    content: |
+      ```
+      SHOW CLOCKS                         show calibrated timer information
+      ```
+
+      Shows information about calibrated timers and clock sources.
+
+  - id: stopping
+    parent: commands
+    title: "Stopping The Simulator"
+    content: |
+      Programs run until the simulator detects an error or stop condition, or
+      until the user forces a stop condition.
+    children:
+      - stopping_simulator
+      - stopping_user
+
+  - id: stopping_simulator
+    parent: stopping
+    title: "Simulator Detected Stop Conditions"
+    content: |
+      These simulator-detected conditions stop simulation:
+
+      * **HALT instruction** - If a HALT instruction is decoded, simulation stops.
+      * **Breakpoint** - The simulator may support breakpoints (see BREAK command).
+      * **I/O error** - If an I/O error occurs during simulation of an I/O operation,
+        and the device stop-on-I/O-error flag is set, simulation usually stops.
+      * **Processor condition** - Certain processor conditions can stop simulation;
+        these are described with the individual simulators.
+
+  - id: stopping_user
+    parent: stopping
+    title: "User Specified Stop Conditions"
+    content: |
+      Typing the interrupt character stops simulation. The interrupt character
+      is defined by the WRU (where are you) console option and is initially set
+      to 005 (^E).
+
+      See the BREAK command for information on setting breakpoints.
+
+  - id: config_devices
+    parent: commands
+    title: "Altering The Simulated Configuration"
+    content: |
+      In most simulators, the **SET <device> DISABLED** command removes the
+      specified device from the configuration. A DISABLED device is invisible
+      to running programs. The device can still be RESET, but it cannot be
+      ATTACHed, DETACHed, or BOOTed. **SET <device> ENABLED** restores a disabled
+      device to a configuration.
+
+      Most multi-unit devices allow units to be enabled or disabled:
+
+      ```
+      SET <unit> ENABLED          enable unit
+      SET <unit> DISABLED         disable unit
+      ```
+
+      When a unit is disabled, it will not be displayed by SHOW DEVICE.
+
+  - id: attach_formats
+    parent: attach
+    title: "Tape and Disk Formats"
+    content: |
+      For simulated magnetic tapes, the ATTACH command can specify the format of
+      the attached tape image file:
+
+      ```
+      ATTACH -f <tape_unit> <format> <filename>
+      ```
+
+      Currently supported tape image file formats:
+
+      * **SIMH** - SIMH simulator format
+      * **E11** - E11 simulator format
+      * **TPC** - TPC format
+      * **P7B** - Pierce simulator 7-track format
+
+      For some simulated disk devices, the ATTACH command can specify the format
+      of the attached disk image file:
+
+      ```
+      ATTACH -f <disk_unit> <format> <filename>
+      ```
+
+      Currently supported disk image file formats:
+
+      * **SIMH** - SIMH simulator format
+      * **VHD** - Virtual Disk format
+      * **RAW** - Platform specific access to physical disk or CDROM drives
+
+      The disk format can also be set with the SET command prior to ATTACH:
+
+      ```
+      SET <disk_unit> FORMAT=<format>
+      ATT <disk_unit> <filename>
+      ```
+
+      The format of an attached tape or disk file can be displayed:
+
+      ```
+      SHOW <unit> FORMAT
+      ```
+
+  - id: do_file_parsing
+    parent: do
+    title: "Parameter and Environment Variable File Parsing"
+    content: |
+      The value of environment variables can be parsed as filenames
+      and have their values be expanded to full paths and/or into pieces.
+
+      Parsing and expansion of file names:
+
+      * `%~I%` - expands the value of %I% removing any surrounding quotes (")
+      * `%~fI%` - expands the value of %I% to a fully qualified path name
+      * `%~pI%` - expands the value of %I% to a path only
+      * `%~nI%` - expands the value of %I% to a file name only
+      * `%~xI%` - expands the value of %I% to a file extension only
+      * `%~tI%` - expands the value of %I% to date/time of file
+      * `%~zI%` - expands the value of %I% to size of file
+
+      The modifiers can be combined to get compound results:
+
+      * `%~pnI%` - expands the value of %I% to a path and name only
+      * `%~nxI%` - expands the value of %I% to a file name and extension only
+
+      In the above examples %I% can be replaced by other environment variables
+      or numeric parameters to a DO command invocation.
+
+      **Examples:**
+      ```
+      sim> set env FNAME='xyzzy.ini'
+      sim> echo ~FNAME=%~FNAME%
+      xyzzy.ini
+      sim> echo ~fFNAME=%~fFNAME%
+      ~fFNAME=/home/user/xyzzy.ini
+      sim> echo ~nxFNAME=%~nxFNAME%
+      ~nxFNAME=xyzzy.ini
+      sim> echo ~pnFNAME=%~pnFNAME%
+      ~pnFNAME=/home/user/xyzzy
+      ```
+
+  - id: do_env_substitution
+    parent: do
+    title: "Environment Variable String Substitution"
+    content: |
+      Environment variable string substitution allows modifications to variable
+      values:
+
+      ```
+      %XYZ:str1=str2%
+      ```
+
+      This expands the XYZ environment variable, substituting each occurrence
+      of "str1" in the expanded result with "str2". "str2" can be the empty
+      string to effectively delete all occurrences of "str1" from the expanded
+      output. "str1" can begin with an asterisk, in which case it will match
+      everything from the beginning of the expanded output to the first
+      occurrence of the remaining portion of str1.
+
+      May also specify substrings for an expansion:
+
+      ```
+      %XYZ:~10,5%
+      ```
+
+      This expands the XYZ environment variable, and then uses only the 5
+      characters that begin at the 11th (offset 10) character of the expanded
+      result. If the length is not specified, then it defaults to the
+      remainder of the variable value. If either number (offset or length) is
+      negative, then the number used is the length of the environment variable
+      value added to the offset or length specified.
+
+      **Examples:**
+      ```
+      %XYZ:~-10%        extract the last 10 characters of XYZ
+      %XYZ:~0,-2%       extract all but the last 2 characters of XYZ
+      ```
+
+  - id: return_statuses
+    parent: do_return
+    title: "Condition Names"
+    content: |
+      The available standard SCPE_ condition names are:
+
+      * **NXM** - Address space exceeded
+      * **UNATT** - Unit not attached
+      * **IOERR** - I/O error
+      * **CSUM** - Checksum error
+      * **FMT** - Format error
+      * **NOATT** - Unit not attachable
+      * **OPENERR** - File open error
+      * **MEM** - Memory exhausted
+      * **ARG** - Invalid argument
+      * **STEP** - Step expired
+      * **UNK** - Unknown command
+      * **RO** - Read only argument
+      * **INCOMP** - Command not completed
+      * **STOP** - Simulation stopped
+      * **EXIT** - Goodbye
+      * **TTIERR** - Console input I/O error
+      * **TTOERR** - Console output I/O error
+      * **EOF** - End of file
+      * **REL** - Relocation error
+      * **NOPARAM** - No settable parameters
+      * **ALATT** - Unit already attached
+      * **TIMER** - Hardware timer error
+      * **SIGERR** - Signal handler setup error
+      * **TTYERR** - Console terminal setup error
+      * **NOFNC** - Command not allowed
+      * **UDIS** - Unit disabled
+      * **NORO** - Read only operation not allowed
+      * **INVSW** - Invalid switch
+      * **MISVAL** - Missing value
+      * **2FARG** - Too few arguments
+      * **2MARG** - Too many arguments
+      * **NXDEV** - Non-existent device
+      * **NXUN** - Non-existent unit
+      * **NXREG** - Non-existent register
+      * **NXPAR** - Non-existent parameter
+      * **NEST** - Nested DO command limit exceeded
+      * **IERR** - Internal error
+      * **MTRLNT** - Invalid magtape record length
+      * **LOST** - Console Telnet connection lost
+      * **TTMO** - Console Telnet connection timed out
+      * **STALL** - Console Telnet output stall
+      * **AFAIL** - Assertion failed
+      * **INVREM** - Invalid remote console command
+      * **AMBREG** - Ambiguous register
+      * **RUNTIME** - Run time limit exhausted
+
+  - id: telnet_attach
+    parent: attach
+    title: "Telnet Attachment"
+    content: |
+      For Telnet-based terminal emulation devices, the ATTACH command associates
+      the master unit with a TCP/IP listening port:
+
+      ```
+      ATTACH <unit> <port>
+      ```
+
+      The port is a decimal number between 1 and 65535 that is not already used
+      by other TCP/IP applications.
+
+  - id: ethernet_attach
+    parent: attach
+    title: "Ethernet Attachment"
+    content: |
+      For Ethernet emulators, the ATTACH command associates the simulated Ethernet
+      with a physical Ethernet device:
+
+      ```
+      ATTACH <unit> <physical device name>
+      ```
+
+      Use **SHOW ETHERNET** to see available physical Ethernet devices.
+
+  - id: noautosize
+    parent: set
+    title: "NoAutosize"
+    content: |
+      Disable disk autosizing for all disks:
+
+      ```
+      SET NOAUTOSIZE              disable disk autosizing for all disks
+      ```
+
+      This prevents the simulator from automatically determining disk sizes
+      based on the image file size.
+
+  - id: help
+    parent: commands
+    title: "HELP"
+    content: |
+      The **HELP** command provides information about simulator commands and features:
+
+      ```
+      HELP                        display this message
+      HELP <command>              display help for command
+      HELP <dev>                  display help for device
+      HELP <dev> registers        display help for device register variables
+      HELP <dev> attach           display help for device specific ATTACH command
+      HELP <dev> set              display help for device specific SET commands
+      HELP <dev> show             display help for device specific SHOW commands
+      HELP <dev> <command>        display help for device specific command
+      ```
+
+      The help system supports:
+      * Command abbreviations (e.g., `help re` shows RESET help)
+      * Multi-word navigation (e.g., `help set debug`)
+      * Topic browsing (e.g., `help debugging`)
+      * Subsection access (e.g., `help attach switches`)
+
+  - id: debug_features
+    parent: commands
+    title: "Debugging Features"
+    content: |
+      The simulator provides several features to help debug command file execution
+      and expression evaluation.
+
+      Debug output can be enabled for specific subsystems:
+
+      ```
+      SET DEBUG STDOUT
+      SET SCP-PROCESS DEBUG=EXPSTACK    Expression Stack Activities
+      SET SCP-PROCESS DEBUG=EXPEVAL     Expression Evaluation Activities
+      SET SCP-PROCESS DEBUG=DO          DO processing
+      ```
+
+      This produces detailed output showing how expressions are evaluated and
+      how DO command files are processed.
+
+  - id: network_attach
+    parent: attach
+    title: "Network Device Attachment"
+    content: |
+      Network devices (Ethernet and serial) have special attachment requirements.
+
+      **For Ethernet devices:**
+      ```
+      ATTACH <unit> <physical device name>
+      SHOW ETHERNET                    list available devices
+      ```
+
+      **For serial devices:**
+      ```
+      SET CONSOLE SERIAL=serialport[;config]
+      ```
+
+      The optional config specifies port configuration (e.g., `;9600-8n1`).
+
+  - id: device_help
+    parent: commands
+    title: "Device-Specific Help"
+    content: |
+      Many devices provide their own specific help information. To access
+      device-specific help:
+
+      ```
+      HELP <device>               general device help
+      HELP <device> REGISTERS     register descriptions
+      HELP <device> SET           device-specific SET commands
+      HELP <device> SHOW          device-specific SHOW commands
+      HELP <device> ATTACH        device-specific ATTACH information
+      ```
+
+      Some devices have more detailed or specific help available with:
+
+      ```
+      HELP <device> ATTACH
+      HELP <device> SET
+      HELP <device> SHOW
+      ```
+
+  - id: nobreak
+    parent: commands
+    title: "NOBREAK"
+    content: |
+      Clear breakpoints. This is an alias for clearing breakpoints.
+
+      ```
+      NOBREAK <list>              clear breakpoints
+      ```
+
+      See the BREAK command for detailed syntax and examples.
+
+  - id: debug_cmd
+    parent: commands
+    title: "DEBUG"
+    content: |
+      The **DEBUG** command is an alias for **SET DEBUG**.
+
+      ```
+      DEBUG debug_file            specify the debug destination
+      ```
+
+      See **SET DEBUG** for full documentation on debug output configuration.
+
+  - id: nodebug_cmd
+    parent: commands
+    title: "NODEBUG"
+    content: |
+      The **NODEBUG** command is an alias for **SET NODEBUG**.
+
+      ```
+      NODEBUG                     disable debug output
+      ```
+
+      See **SET DEBUG** for full documentation on debug output configuration.
+
+  - id: tar
+    parent: commands
+    title: "TAR"
+    content: |
+      **tar** is an archiving utility for creating and extracting tar archives.
+
+      ```
+      TAR --help                  show tar command help
+      ```
+
+      The TAR command provides access to tar archiving functionality directly
+      from the simulator command line. This is useful for:
+
+      * Creating disk images from directory structures
+      * Extracting files from tar archives
+      * Building test environments
+      * Platform-neutral archive operations
+
+      Use `tar --help` for detailed usage information.
+
+  - id: curl
+    parent: commands
+    title: "CURL"
+    content: |
+      **curl** is a utility to transfer data from or to a URL.
+
+      ```
+      CURL --help                 show curl command help
+      ```
+
+      The CURL command provides access to URL transfer functionality directly
+      from the simulator command line. This is useful for:
+
+      * Downloading disk images from the internet
+      * Fetching configuration files
+      * Accessing remote resources
+      * Automated test setup
+
+      Use `curl --help` for detailed usage information.
+
+  - id: diskinfo
+    parent: commands
+    title: "DISKINFO"
+    content: |
+      Display information about a disk container file.
+
+      ```
+      DISKINFO container-spec     show information about a disk container
+      ```
+
+      The DISKINFO command displays detailed information about disk image files,
+      including:
+
+      * Container format (SIMH, VHD, RAW, etc.)
+      * Disk geometry (cylinders, heads, sectors)
+      * Total capacity
+      * File size and compression information
+      * Metadata and attributes
+
+      This is useful for verifying disk images before attaching them to units.
+
+# Command to help path mappings
+# Format: command_name: path.to.help.node
+command_map:
+  RESET: commands.reset
+  RE: commands.reset
+
+  EXAMINE: commands.examine
+  E: commands.examine
+  IEXAMINE: commands.examine
+  IE: commands.examine
+  DEPOSIT: commands.examine
+  D: commands.examine
+  IDEPOSIT: commands.examine
+  ID: commands.examine
+
+  RUN: commands.run.run_command
+  RU: commands.run.run_command
+  GO: commands.run.go_command
+  CONTINUE: commands.run.continue_command
+  CONT: commands.run.continue_command
+  CO: commands.run.continue_command
+  STEP: commands.run.step_command
+  S: commands.run.step_command
+  BOOT: commands.run.boot_command
+  BO: commands.run.boot_command
+
+  BREAK: commands.breakpoints
+  ATTACH: commands.attach
+  AT: commands.attach
+  DETACH: commands.detach
+  DET: commands.detach
+
+  SET: commands.set
+  SHOW: commands.show
+
+  DO: commands.do
+  GOTO: commands.do.do_goto
+  RETURN: commands.do.do_return
+
+  EVALUATE: commands.evaluate
+  EVAL: commands.evaluate
+
+  LOAD: commands.load
+  LO: commands.load
+  DUMP: commands.dump
+  DU: commands.dump
+
+  SAVE: commands.save
+  SA: commands.save
+  RESTORE: commands.restore
+  REST: commands.restore
+  GET: commands.restore
+
+  EXIT: commands.exit
+  QUIT: commands.exit
+  BYE: commands.exit
+
+  ECHO: commands.echo
+
+  ASSERT: commands.assert
+  IF: commands.if
+
+  SEND: commands.send
+  NOSEND: commands.send
+
+  EXPECT: commands.expect
+  NOEXPECT: commands.expect
+
+  ON: commands.on
+
+  ASSIGN: commands.assign
+  DEASSIGN: commands.assign
+
+  CD: commands.cd
+  PWD: commands.cd
+
+  DIR: commands.dir
+  LS: commands.dir
+
+  TYPE: commands.type
+  CAT: commands.type
+
+  DELETE: commands.delete
+  DEL: commands.delete
+  RM: commands.delete
+
+  COPY: commands.copy
+  CP: commands.copy
+
+  RENAME: commands.rename
+  MOVE: commands.rename
+  MV: commands.rename
+
+  MKDIR: commands.mkdir
+  RMDIR: commands.rmdir
+
+  NEXT: commands.next
+  N: commands.next
+
+  SLEEP: commands.sleep
+
+  ECHOF: commands.echof
+
+  SHIFT: commands.shift
+  CALL: commands.call
+
+  PROCEED: commands.proceed
+  IGNORE: commands.proceed
+
+  RUNLIMIT: commands.runlimit
+  NORUNLIMIT: commands.runlimit
+
+  SCREENSHOT: commands.screenshot
+
+  HELP: commands.help
+  H: commands.help
+
+  NOBREAK: commands.nobreak
+
+  DEBUG: commands.debug_cmd
+  NODEBUG: commands.nodebug_cmd
+
+  ELSE: commands.if
+
+  TAR: commands.tar
+  CURL: commands.curl
+  DISKINFO: commands.diskinfo
+
+# Command-specific subsections
+# Allows "help attach -r" to jump directly to switch help
+command_subsections:
+  ATTACH:
+    switches: commands.attach.attach_switches
+    "-n": commands.attach.attach_switches
+    "-e": commands.attach.attach_switches
+    "-r": commands.attach.attach_switches
+    "-q": commands.attach.attach_switches
+    "-f": commands.attach.attach_switches
+    formats: commands.attach.attach_formats
+    telnet: commands.attach.telnet_attach
+    ethernet: commands.attach.ethernet_attach
+
+  SET:
+    console: commands.set.set_console
+    debug: commands.set.set_debug
+    throttle: commands.set.set_throttle
+    device: commands.set.set_device
+
+  EXAMINE:
+    switches: commands.examine.examine_switches
+    examples: commands.examine.examine_examples
+
+  STEP:
+    switches: commands.run.step_command.step_switches
+
+  BREAK:
+    display: commands.breakpoints.break_display
+    remove: commands.breakpoints.break_remove
+    examples: commands.breakpoints.break_examples
+
+  SHOW:
+    config: commands.show.show_config
+    configuration: commands.show.show_config
+    devices: commands.show.show_devices
+    queue: commands.show.show_queue
+    time: commands.show.show_time
+    break: commands.show.show_break
+    version: commands.show.show_version
+
+  RESTORE:
+    switches: commands.restore.restore_switches
+
+  DO:
+    switches: commands.do.do_switches
+    variables: commands.do.do_variables
+    goto: commands.do.do_goto
+    return: commands.do.do_return
+    file_parsing: commands.do.do_file_parsing
+    substitution: commands.do.do_env_substitution
+
+  IF:
+    expressions: commands.if.if_expressions
+
+  SEND:
+    parameters: commands.send.send_parameters
+    escapes: commands.send.send_escapes
+
+  EXPECT:
+    switches: commands.expect.expect_switches
+    matching: commands.expect.expect_matching
+
+  ON:
+    statuses: commands.on.on_statuses
+    control_c: commands.on.on_control_c
+
+  TYPE:
+    switches: commands.type.type_switches
+
+  RETURN:
+    statuses: commands.on.on_statuses
+
+# Topics provide alternate access paths (tags/categories)
+topics:
+  - name: debugging
+    title: "Debugging"
+    description: "Commands and features related to debugging programs"
+    nodes:
+      - commands.breakpoints
+      - commands.examine
+      - commands.run.step_command
+      - commands.set.set_debug
+      - commands.assert
+
+  - name: execution
+    title: "Execution Control"
+    description: "Commands for controlling program execution"
+    nodes:
+      - commands.run.run_command
+      - commands.run.go_command
+      - commands.run.continue_command
+      - commands.run.step_command
+      - commands.run.boot_command
+      - commands.next
+      - commands.runlimit
+
+  - name: configuration
+    title: "Configuration"
+    description: "Commands for configuring the simulator"
+    nodes:
+      - commands.set
+      - commands.reset
+      - commands.show
+      - commands.assign
+
+  - name: files
+    title: "File Operations"
+    description: "Commands for working with files and persistent state"
+    nodes:
+      - commands.attach
+      - commands.detach
+      - commands.load
+      - commands.dump
+      - commands.save
+      - commands.restore
+      - commands.diskinfo
+
+  - name: scripting
+    title: "Command File Scripting"
+    description: "Commands and features for writing command files"
+    nodes:
+      - commands.do
+      - commands.do.do_goto
+      - commands.do.do_return
+      - commands.do.do_file_parsing
+      - commands.do.do_env_substitution
+      - commands.assert
+      - commands.if
+      - commands.echo
+      - commands.echof
+      - commands.send
+      - commands.expect
+      - commands.on
+      - commands.sleep
+      - commands.shift
+      - commands.call
+      - commands.proceed
+
+  - name: filesystem
+    title: "File System Operations"
+    description: "Commands for working with the host file system"
+    nodes:
+      - commands.cd
+      - commands.dir
+      - commands.type
+      - commands.delete
+      - commands.copy
+      - commands.rename
+      - commands.mkdir
+      - commands.rmdir
+      - commands.tar
+      - commands.curl
+
+  - name: stopping
+    title: "Stopping Execution"
+    description: "Methods to stop simulator execution"
+    nodes:
+      - commands.stopping
+      - commands.breakpoints
+      - commands.runlimit
+
+  - name: advanced
+    title: "Advanced Features"
+    description: "Advanced simulator features and customization"
+    nodes:
+      - commands.set.set_remote
+      - commands.set.set_log
+      - commands.set.set_clock
+      - commands.set.set_asynch
+      - commands.set.set_environment
+      - commands.debug_features
+      - commands.device_help
+
+# Cross-references for related topics
+# These appear at the bottom of help nodes as "See also:"
+see_also:
+  commands.examine:
+    - commands.breakpoints
+    - commands.run.step_command
+
+  commands.breakpoints:
+    - commands.examine
+    - commands.run
+    - commands.show.show_break
+
+  commands.run.step_command:
+    - commands.run.run_command
+    - commands.run.continue_command
+    - commands.breakpoints
+
+  commands.attach:
+    - commands.detach
+    - commands.set
+
+  commands.detach:
+    - commands.attach
+    - commands.exit
+
+  commands.save:
+    - commands.restore
+
+  commands.restore:
+    - commands.save
+
+  commands.load:
+    - commands.dump
+    - commands.attach
+
+  commands.dump:
+    - commands.load
+
+  commands.do:
+    - commands.do.do_goto
+    - commands.do.do_return
+    - commands.assert
+    - commands.if
+
+  commands.assert:
+    - commands.if
+    - commands.do
+
+  commands.if:
+    - commands.assert
+    - commands.do
+
+  commands.if.if_expressions:
+    - commands.assert
+
+  commands.send:
+    - commands.expect
+
+  commands.expect:
+    - commands.send
+    - commands.on
+
+  commands.on:
+    - commands.do
+    - commands.assert
+    - commands.expect
+
+  commands.assign:
+    - commands.show
+
+  commands.cd:
+    - commands.dir
+
+  commands.type:
+    - commands.dir
+
+  commands.copy:
+    - commands.rename
+
+  commands.rename:
+    - commands.copy
+
+  commands.next:
+    - commands.run.step_command
+    - commands.run.continue_command
+
+  commands.sleep:
+    - commands.do
+
+  commands.echof:
+    - commands.echo
+    - commands.send
+
+  commands.runlimit:
+    - commands.run
+    - commands.show.show_runlimit
+
+  commands.set.set_remote:
+    - commands.set.set_console
+
+  commands.set.set_log:
+    - commands.set.set_debug
+
+  commands.set.set_clock:
+    - commands.set.set_throttle
+    - commands.show.show_clocks
+
+  commands.set.set_asynch:
+    - commands.show.show_asynch
+
+  commands.set.set_environment:
+    - commands.do.do_variables
+
+  commands.set.set_verify:
+    - commands.do
+
+  commands.set.set_message:
+    - commands.on
+
+  commands.set.set_break:
+    - commands.breakpoints
+
+  commands.show.show_throttle:
+    - commands.set.set_throttle
+
+  commands.show.show_on:
+    - commands.on
+
+  commands.show.show_do:
+    - commands.do
+
+  commands.show.show_runlimit:
+    - commands.runlimit
+
+  commands.stopping:
+    - commands.breakpoints
+    - commands.runlimit
+    - commands.on
+
+  commands.config_devices:
+    - commands.set.set_device
+    - commands.show.show_devices
+
+  commands.attach.attach_formats:
+    - commands.attach
+    - commands.show
+
+  commands.do.do_file_parsing:
+    - commands.do.do_variables
+    - commands.set.set_environment
+
+  commands.do.do_env_substitution:
+    - commands.do.do_variables
+    - commands.set.set_environment
+
+  commands.help:
+    - commands.show
+    - commands.device_help
+
+  commands.debug_features:
+    - commands.set.set_debug
+    - commands.do
+    - commands.if.if_expressions
+
+  commands.attach.network_attach:
+    - commands.attach.telnet_attach
+    - commands.attach.ethernet_attach
+    - commands.show.show_ethernet
+    - commands.show.show_serial
+
+  commands.nobreak:
+    - commands.breakpoints
+    - commands.breakpoints.break_remove
+
+  commands.debug_cmd:
+    - commands.set.set_debug
+
+  commands.nodebug_cmd:
+    - commands.set.set_debug
+
+  commands.tar:
+    - commands.curl
+    - commands.attach
+
+  commands.curl:
+    - commands.tar
+    - commands.attach
+
+  commands.diskinfo:
+    - commands.attach
+    - commands.attach.attach_formats
+    - commands.show
+
+  commands.show:
+    - commands.set
+    - commands.examine
+
+  commands.set:
+    - commands.show
+    - commands.reset

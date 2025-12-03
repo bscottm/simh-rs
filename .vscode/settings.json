@@ -1,0 +1,15 @@
+{
+    "cmake.sourceDirectory": "C:/Users/bsm21317/play/open-simh",
+    "rust-analyzer.linkedProjects": [
+        "Cargo.toml"
+    ],
+    "rust-analyzer.lens.run.enable": true,
+    "rust-analyzer.lens.debug.enable": true,
+    "rust-analyzer.trace.server": "off",
+    "editor.codeLens": true,
+    "reflow.preferredLineLength": 110,
+    "reflowMarkdown.preferredLineLength": 110,
+    "editor.wordWrapColumn": 110,
+    "reflowlist.wrapColumn": 110,
+    "rewrap.wrappingColumn": 110
+}

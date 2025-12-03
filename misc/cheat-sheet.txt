@@ -1,0 +1,88 @@
+======================================================================
+           EMACS RUST & DEVELOPMENT CHEAT SHEET (2026)
+======================================================================
+
+--- MINIBUFFER & SEARCH (VERTICO + CONSULT + ORDERLESS) ---
+M-x             execute-extended-command   Vertical command list
+C-x b           consult-buffer             Live-preview buffer switch
+C-s             consult-line               Fuzzy search in current buffer
+C-c q           consult-grep               Live project-wide search
+M-g i           consult-imenu              Jump to symbol in current file
+M-g I           consult-imenu-multi        Jump to symbol in ANY open file
+M-y             consult-yank-pop           Visual kill-ring history
+C-n / C-p       vertico-next/previous      Navigate lists
+
+--- UI & CONTEXT (EMBARK + MINIMAP + ELDOC-BOX) ---
+C-.             embark-act                 "Context Menu" for point/candidate
+C-c m           minimap-mode               Toggle VS Code-style mini-view
+C-c t           treemacs                   Toggle File Explorer sidebar
+C-c h           eldoc-box-help-at-point    Function/symbol documentation
+C-c d           eldoc                      Documentation in a dedicated window
+M-next          Alt-PgDn                   Page the eldoc child window
+M-prev          Alt-PgUp                   Page the eldoc child window
+
+
+--- INTELLIGENCE (LSP-MODE) ---
+M-.             xref-find-definitions      Jump to definition
+M-,             xref-go-back               Jump back through xref stack
+M-?             xref-find-references       Find all usages (via LSP)
+s-l r r         lsp-rename                 Type-safe rename across project
+s-l a a         lsp-execute-code-action    LSP Fix-its (Quick Fix menu)
+s-l w r         lsp-restart-workspace      Restart LSP server
+s-l w q         lsp-shutdown               Shutdown all LSP servers
+
+(s-l -> Super L -> Windows key L -> C-c C-l)
+
+--- INTELLIGENCE (EGLOT) ---
+M-.             xref-find-definitions      Jump to definition
+M-,             xref-go-back               Jump back
+M-?             xref-find-references       Find all usages (LSP)
+C-c C-c r       eglot-rename               Type-safe rename everywhere
+C-c C-c a       eglot-code-actions         LSP Fix-its (Quick Fix menu)
+M-x             eglot-reconnect            Restart LSP (Windows Pipe fix)
+
+--- CARGO & BUILD ENGINE (RUSTIC) ---
+C-c C-c C-c     rustic-cargo-check         Fast "Borrow Checker" check
+C-c C-c C-r     rustic-cargo-run           Run project
+C-c C-c C-t     rustic-cargo-test          Run all tests
+C-c C-c C-l     rustic-cargo-clippy        Linter (The "Advice" engine)
+C-c C-c C-b     rustic-cargo-build         Full project compilation
+
+--- COMPLETION (CORFU) ---
+C-n / C-p       corfu-next/previous        Navigate popup candidates
+TAB             corfu-insert               Insert selected candidate
+ESC             corfu-quit                 Close completion popup
+Space           corfu-separator            Orderless "Fuzzy" search term
+
+--- DIAGNOSTICS (FLYMAKE) ---
+M-g n           flymake-goto-next-error    Jump to next error
+M-g p           flymake-goto-prev-error    Jump to previous error
+C-c C-c l       flymake-show-buffer-diag   Show all buffer errors
+
+-- PROJECT (project.el) ---
+C-x p f	        project-find-file           Fuzzy-find any file in the current project root.
+C-x p p	        project-switch-project      Switch between recently visited projects
+C-x p v	        magit-project-status        Open Magit specifically for the current project root.
+C-x p s	        consult-ripgrep             Search for strings across the entire project instantly.
+
+--- GIT & DIFFS (MAGIT) ---
+C-x g           magit-status               The Git Command Center
+s               magit-stage                Stage hunk/file at point
+u               magit-unstage              Unstage hunk/file at point
+c c             magit-commit-create        Open commit buffer
+P p             magit-push                 Push to remote
+e               magit-ediff-dwim           Launch 3-way Ediff (Veteran mode)
+
+--- SNIPPETS (YASNIPPET) ---
+fn [TAB]        yas-expand                 Expand function template
+test [TAB]      yas-expand                 Expand #[test] block
+impl [TAB]      yas-expand                 Expand impl Block
+match [TAB]     yas-expand                 Expand match statement
+
+--- MARGINS & FORMATTING ---
+Column 110      Primary Margin             Visual line indicator
+Column 132      Secondary Margin           "Danger Zone" neon highlight
+C-x C-s         save-buffer                Auto-format + Trim whitespace
+======================================================================
+
+Note: "s-" is the Super key (the Windows key), which is intercepted by the OS.

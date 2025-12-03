@@ -1,0 +1,5 @@
+# Preferred wrap point
+max_width = 110
+
+# Don't be too aggressive with strings and comments.
+error_on_line_overflow = false

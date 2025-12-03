@@ -1,0 +1,13 @@
+[package]
+name = "resource-macro"
+version = "0.1.0"
+edition = "2021"
+publish = false              # hard stop against accidental crates.io publish
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn   = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"

@@ -1,0 +1,30 @@
+{
+	"[rust]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../open-simh",
+      		"name": "Open SIMH Reference",
+      		"settings": {
+        		"git.enabled": false
+      		}
+		}
+	],
+	"settings": {
+        "cmake.configureOnOpen": false,
+		"editor.rulers": [
+			80, 110, 132
+		]
+	},
+    "folder-settings": {
+        "open-simh": {
+            "cmake.sourceDirectory": "",
+            "C_Cpp.intelliSenseEngine": "default"
+        }
+    }
+}
