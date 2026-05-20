@@ -3,7 +3,7 @@
 #![allow(rustdoc::private_intra_doc_links)]
 
 mod console;
-mod devenv;
+mod metadata;
 mod device_node;
 mod disassembler;
 mod machine;
@@ -12,11 +12,10 @@ mod simenv;
 mod simerror;
 mod simloop;
 mod sysbus;
-mod unitenv;
 
 // Re-export commonly used types
 pub use console::{new_console, SimConsole};
-pub use devenv::DeviceMetadata;
+pub use metadata::{DeviceMetadata, UnitMetadata};
 pub use device_node::{Controller, DeviceNode, StandaloneDevice};
 pub use disassembler::Disassembler;
 pub use machine::{
@@ -29,4 +28,3 @@ pub use simenv::SimEnvironment;
 pub use simerror::SimError;
 pub use simloop::run_simulator;
 pub use sysbus::SystemBus;
-pub use unitenv::UnitMetadata;
