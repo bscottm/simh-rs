@@ -9,7 +9,7 @@ use crate::env::{
     machine::{CPUTraits, DeviceTraits},
     simerror::SimError,
     sysbus::SystemBus,
-    unitenv::UnitMetadata,
+    metadata::UnitMetadata,
 };
 
 //=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=

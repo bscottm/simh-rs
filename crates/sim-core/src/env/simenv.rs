@@ -28,7 +28,7 @@ use rustc_hash::FxHasher;
 use crate::{
     env::{
         console::SimConsole,
-        devenv::DeviceMetadata,
+        metadata::{DeviceMetadata, UnitMetadata},
         device_node::{Controller, DeviceLookup, DeviceLookupMut, DeviceNode, StandaloneDevice},
         machine::{
             AttachmentResource, CPUTraits, DeviceAccessor, DeviceHandle, DeviceRole, DeviceTraits,
@@ -37,7 +37,6 @@ use crate::{
         messages::{ExamineResult, SimRequest, SimResponse},
         simerror::SimError,
         sysbus::SystemBus,
-        unitenv::UnitMetadata,
     },
     logging::{debug_registry, SharedDebugSnapshot, SharedDebugState},
     timers::{create_platform_timer, TimerError, TimerManager, TimerResult},
