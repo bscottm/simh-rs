@@ -2,6 +2,15 @@
 
 ## High-Level Thread Model
 
+SIMH-RS separates the Command Line Interface (CLI) from the simulator and the simulation environment.
+
+- The CLI interacts with the user and interprets SIMH scripting commands. It lives exclusively in the CLI
+  thread.
+- The simulator operates within the context of the `SimEnvironment` simulation environment.
+- The CLI and simulation environment communicate via messages and a Multi-Producer/Single-Consumer message
+  channel.
+- The simulator exposes resources (registers, internal state, ...) to the CLI via metadata.
+
 ```
 +-------------------------------------------------------------------------+
 |                          CLI Thread                                     |
